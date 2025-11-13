@@ -90,6 +90,8 @@ export function SudokuCanvas({ grid, selectedCell, onCellSelect, showNotes }: Su
         className="touch-none cursor-pointer rounded-md shadow-lg"
         style={{ maxWidth: '100%', maxHeight: '100%' }}
         data-testid="canvas-sudoku-board"
+        data-selected-cell={selectedCell ? `${selectedCell.row},${selectedCell.col}` : "none"}
+        aria-label={selectedCell ? `Cell at row ${selectedCell.row + 1}, column ${selectedCell.col + 1} selected` : "Sudoku board - click to select a cell"}
       />
     </div>
   );

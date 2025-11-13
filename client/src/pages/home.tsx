@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Play, RotateCcw, Pause } from "lucide-react";
-import { generateSudokuPuzzle, createSudokuGrid, checkGridComplete, getHintsForCell } from "@/lib/sudoku";
+import { generateSudokuPuzzle, createSudokuGrid, checkGridComplete, getHintsForCell, gridToString } from "@/lib/sudoku";
 import { soundManager } from "@/lib/sounds";
 import type { SudokuGrid, GameState } from "@shared/schema";
 import confetti from "canvas-confetti";
@@ -104,7 +104,6 @@ export default function Home() {
 
   const startNewGame = (difficulty: 'easy' | 'medium' | 'hard' = 'medium') => {
     const { puzzle, solution: newSolution } = generateSudokuPuzzle(difficulty);
-    const { gridToString } = require('@/lib/sudoku');
     const grid = createSudokuGrid(puzzle, newSolution);
     
     const puzzleId = `puzzle_${Date.now()}_${difficulty}`;
