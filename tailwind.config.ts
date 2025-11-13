@@ -16,6 +16,13 @@ export default {
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
+        'carv-purple': "hsl(var(--carv-purple) / <alpha-value>)",
+        'carv-purple-light': "hsl(var(--carv-purple-light) / <alpha-value>)",
+        'carv-purple-dark': "hsl(var(--carv-purple-dark) / <alpha-value>)",
+        'blockchain-blue': "hsl(var(--blockchain-blue) / <alpha-value>)",
+        'ai-cyan': "hsl(var(--ai-cyan) / <alpha-value>)",
+        'success-green': "hsl(var(--success-green) / <alpha-value>)",
+        'error-red': "hsl(var(--error-red) / <alpha-value>)",
         card: {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
@@ -83,9 +90,10 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
+        sans: ["Inter", "var(--font-sans)"],
         serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
+        mono: ["JetBrains Mono", "var(--font-mono)"],
+        display: ["Space Grotesk", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
