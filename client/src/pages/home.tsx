@@ -85,22 +85,6 @@ export default function Home() {
     },
   });
 
-  const handleResetDailyProgress = () => {
-    setCompletedChallenges({});
-    setMintedChallenges({});
-    setActiveChallengeDate(null);
-    try {
-      localStorage.removeItem('sudoku_daily_challenge_completed');
-      localStorage.removeItem('sudoku_daily_challenge_minted');
-    } catch {
-      // ignore
-    }
-    toast({
-      title: "AI Daily Progress Reset",
-      description: "All AI Daily Challenge slots have been reset. You can replay them now.",
-    });
-  };
-
   useEffect(() => {
     if (!walletAddress) return;
 
@@ -1030,29 +1014,20 @@ export default function Home() {
       <main className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-	            <div className="space-y-2">
-	              <DailyChallenge
-	                completedDates={Object.keys(completedChallenges)}
-	                totalParticipants={totalParticipants}
-	                totalWallets={totalWallets}
-	                mintedDates={Object.keys(mintedChallenges)}
-	                activeDate={activeChallengeDate}
-	                completedSlotsByDate={completedChallenges}
-	                mintedSlotsByDate={mintedChallenges}
-	                activeSlotIndex={activeChallengeSlot}
-	                onStartChallenge={({ difficulty, dateKey, slot }) => {
-	                  void startDailyChallenge(dateKey, difficulty, slot);
-	                }}
-	              />
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={handleResetDailyProgress}
-                >
-                  Reset AI Daily Progress
-                </Button>
-              </div>
+            <div className="space-y-2">
+              <DailyChallenge
+                completedDates={Object.keys(completedChallenges)}
+                totalParticipants={totalParticipants}
+                totalWallets={totalWallets}
+                mintedDates={Object.keys(mintedChallenges)}
+                activeDate={activeChallengeDate}
+                completedSlotsByDate={completedChallenges}
+                mintedSlotsByDate={mintedChallenges}
+                activeSlotIndex={activeChallengeSlot}
+                onStartChallenge={({ difficulty, dateKey, slot }) => {
+                  void startDailyChallenge(dateKey, difficulty, slot);
+                }}
+              />
             </div>
 
             <Card className="p-4 space-y-4">

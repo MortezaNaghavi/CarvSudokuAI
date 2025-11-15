@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Trophy, Medal, Award, ExternalLink } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { LeaderboardEntry, NftMint } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -43,7 +43,6 @@ function filterByDifficulty(entries: LeaderboardEntry[], difficulty: DifficultyF
 export function Leaderboard() {
   const { publicKey } = useWallet();
   const walletAddress = publicKey?.toString() || null;
-  const queryClient = useQueryClient();
 
   const { data: globalEntries, isLoading: isLoadingGlobal } = useQuery<LeaderboardEntry[]>({
     queryKey: ["/api/leaderboard"],
@@ -99,37 +98,14 @@ export function Leaderboard() {
     setPageMy(0);
   };
 
-  const handleResetLeaderboard = async () => {
-    try {
-      await fetch("/api/leaderboard/reset", { method: "POST" });
-      queryClient.invalidateQueries({ queryKey: ["/api/leaderboard"] });
-      if (walletAddress) {
-        queryClient.invalidateQueries({
-          queryKey: [`/api/leaderboard?walletAddress=${walletAddress}`],
-        });
-      }
-    } catch {
-      // ignore errors in test helper
-    }
-  };
-
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-carv-purple/10">
-              <Trophy className="w-4 h-4 text-carv-purple" />
-            </div>
-            <CardTitle className="text-base">Leaderboard</CardTitle>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-carv-purple/10">
+            <Trophy className="w-4 h-4 text-carv-purple" />
           </div>
-          <button
-            type="button"
-            onClick={handleResetLeaderboard}
-            className="text-[11px] text-muted-foreground hover:underline"
-          >
-            Reset (Test)
-          </button>
+          <CardTitle className="text-base">Leaderboard</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
