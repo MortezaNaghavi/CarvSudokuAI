@@ -8,24 +8,35 @@ interface NumberPadProps {
   onToggleNotes: () => void;
   notesMode: boolean;
   disabled: boolean;
+  completedNumbers?: number[];
 }
 
-export function NumberPad({ onNumberSelect, onErase, onToggleNotes, notesMode, disabled }: NumberPadProps) {
+export function NumberPad({ onNumberSelect, onErase, onToggleNotes, notesMode, disabled, completedNumbers = [] }: NumberPadProps) {
+  const rows = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9],
+  ];
+
   return (
-    <Card className="p-4">
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-          <Button
-            key={num}
-            onClick={() => onNumberSelect(num)}
-            disabled={disabled}
-            size="lg"
-            variant={notesMode ? "outline" : "default"}
-            className="text-xl font-mono font-semibold aspect-square min-h-14"
-            data-testid={`button-number-${num}`}
-          >
-            {num}
-          </Button>
+    <Card className="p-4 flex flex-col gap-4 max-w-[220px] mx-auto">
+      <div className="flex flex-col gap-3 w-full">
+        {rows.map((row, rowIndex) => (
+          <div key={rowIndex} className="grid grid-cols-3 gap-3 w-full">
+            {row.map((num) => (
+              <Button
+                key={num}
+                onClick={() => onNumberSelect(num)}
+                disabled={disabled || completedNumbers.includes(num)}
+                size="lg"
+                variant={notesMode ? "outline" : "default"}
+                className="text-xl font-mono font-semibold aspect-square min-h-[52px] w-full rounded-xl"
+                data-testid={`button-number-${num}`}
+              >
+                {num}
+              </Button>
+            ))}
+          </div>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-2">

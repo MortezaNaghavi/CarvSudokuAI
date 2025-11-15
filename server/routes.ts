@@ -13,11 +13,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid difficulty level" });
       }
 
-      const existingPuzzle = await storage.getPuzzleByDifficulty(difficulty);
-      if (existingPuzzle) {
-        return res.json(existingPuzzle);
-      }
-
       const { generateSudokuPuzzle, gridToString } = await import('../client/src/lib/sudoku');
       const { puzzle, solution } = generateSudokuPuzzle(difficulty as any);
       
@@ -34,6 +29,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Puzzle generation error:', error);
       res.status(500).json({ error: error.message || "Failed to generate puzzle" });
+    }
+  });
+
+  app.post("/api/puzzles/daily", async (req, res) => {
+    try {
+      const { difficulty, dateKey, slot } = req.body;
+
+      if (!difficulty || !['easy', 'medium', 'hard'].includes(difficulty)) {
+        return res.status(400).json({ error: "Invalid difficulty level" });
+      }
+
+      if (!dateKey || typeof dateKey !== 'string') {
+        return res.status(400).json({ error: "dateKey is required" });
+      }
+
+      const slotIndex: number = typeof slot === 'number' && slot >= 0 && slot <= 5 ? slot : 0;
+
+      const existing = await storage.getDailyPuzzle(dateKey, difficulty, slotIndex);
+      if (existing) {
+        return res.json(existing);
+      }
+
+      const { generateSudokuPuzzle, gridToString } = await import('../client/src/lib/sudoku');
+      const { puzzle, solution } = generateSudokuPuzzle(difficulty as any);
+
+      const puzzleData = {
+        difficulty,
+        puzzle: gridToString(puzzle),
+        solution: gridToString(solution),
+      };
+
+      const validated = insertPuzzleSchema.parse(puzzleData);
+      const created = await storage.createDailyPuzzle(dateKey, validated, slotIndex);
+
+      res.json(created);
+    } catch (error: any) {
+      console.error('Daily puzzle generation error:', error);
+      res.status(500).json({ error: error.message || "Failed to generate daily puzzle" });
     }
   });
 
@@ -79,13 +112,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/leaderboard", async (req, res) => {
     try {
-      const { difficulty, limit } = req.query;
-      
+      const { difficulty, limit, walletAddress } = req.query;
+      const parsedLimit = limit ? parseInt(limit as string) : 100;
+
       let entries;
-      if (difficulty && typeof difficulty === 'string') {
-        entries = await storage.getLeaderboardByDifficulty(difficulty, limit ? parseInt(limit as string) : 100);
+
+      if (walletAddress && typeof walletAddress === 'string') {
+        entries = await storage.getLeaderboardByWallet(
+          walletAddress,
+          typeof difficulty === 'string' ? difficulty : undefined,
+          parsedLimit
+        );
+      } else if (difficulty && typeof difficulty === 'string') {
+        entries = await storage.getLeaderboardByDifficulty(difficulty, parsedLimit);
       } else {
-        entries = await storage.getLeaderboard(limit ? parseInt(limit as string) : 100);
+        entries = await storage.getLeaderboard(parsedLimit);
       }
       
       res.json(entries);
@@ -105,6 +146,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid leaderboard entry data", details: error.errors });
       }
       res.status(500).json({ error: error.message || "Failed to create leaderboard entry" });
+    }
+  });
+
+  app.post("/api/leaderboard/reset", async (_req, res) => {
+    try {
+      await storage.clearLeaderboard();
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to reset leaderboard" });
     }
   });
 
@@ -152,6 +202,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid NFT mint data", details: error.errors });
       }
       res.status(500).json({ error: error.message || "Failed to mint NFT" });
+    }
+  });
+
+  app.post("/api/wallets/seen", async (req, res) => {
+    try {
+      const { walletAddress } = req.body;
+      if (!walletAddress || typeof walletAddress !== "string") {
+        return res.status(400).json({ error: "walletAddress is required" });
+      }
+      await storage.recordWallet(walletAddress);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to record wallet" });
+    }
+  });
+
+  app.get("/api/stats", async (_req, res) => {
+    try {
+      const stats = await storage.getStats();
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch stats" });
     }
   });
 

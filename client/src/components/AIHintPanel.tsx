@@ -9,9 +9,20 @@ interface AIHintPanelProps {
   hint: number[] | null;
   disabled: boolean;
   hintsRemaining: number;
+  explanation?: string | null;
+  suggestedNumber?: number | null;
+  onApplyHint?: () => void;
 }
 
-export function AIHintPanel({ onRequestHint, hint, disabled, hintsRemaining }: AIHintPanelProps) {
+export function AIHintPanel({
+  onRequestHint,
+  hint,
+  disabled,
+  hintsRemaining,
+  explanation,
+  suggestedNumber,
+  onApplyHint,
+}: AIHintPanelProps) {
   const [isThinking, setIsThinking] = useState(false);
 
   const handleHintRequest = async () => {
@@ -56,6 +67,11 @@ export function AIHintPanel({ onRequestHint, hint, disabled, hintsRemaining }: A
                 </Badge>
               ))}
             </div>
+            {explanation && (
+              <p className="mt-2 text-xs text-muted-foreground text-left">
+                {explanation}
+              </p>
+            )}
           </div>
         ) : (
           <div className="p-3 rounded-md bg-muted/50 text-center">
@@ -74,6 +90,17 @@ export function AIHintPanel({ onRequestHint, hint, disabled, hintsRemaining }: A
           <Sparkles className={`w-4 h-4 ${isThinking ? 'animate-pulse' : ''}`} />
           {isThinking ? "CARV AI Thinking..." : "Ask CARV AI for Hint"}
         </Button>
+
+        {hint && hint.length > 0 && suggestedNumber != null && onApplyHint && (
+          <Button
+            onClick={onApplyHint}
+            className="w-full gap-2"
+            variant="outline"
+            size="sm"
+          >
+            Place <span className="font-mono font-semibold">{suggestedNumber}</span> in this cell
+          </Button>
+        )}
         
         <p className="text-xs text-center text-muted-foreground">
           Powered by CARV Protocol • On-chain verification

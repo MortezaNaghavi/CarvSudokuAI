@@ -6,9 +6,25 @@ interface SudokuCanvasProps {
   selectedCell: { row: number; col: number } | null;
   onCellSelect: (row: number, col: number) => void;
   showNotes: boolean;
+  hideNumbers?: boolean;
+  highlightNumber?: number | null;
+  hintContext?: {
+    row: number;
+    col: number;
+    mode: "row" | "col" | "box";
+    value: number;
+  } | null;
 }
 
-export function SudokuCanvas({ grid, selectedCell, onCellSelect, showNotes }: SudokuCanvasProps) {
+export function SudokuCanvas({
+  grid,
+  selectedCell,
+  onCellSelect,
+  showNotes,
+  hideNumbers = false,
+  highlightNumber = null,
+  hintContext = null,
+}: SudokuCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState(0);
 
@@ -40,8 +56,8 @@ export function SudokuCanvas({ grid, selectedCell, onCellSelect, showNotes }: Su
     canvas.style.height = `${canvasSize}px`;
     ctx.scale(dpr, dpr);
 
-    drawGrid(ctx, canvasSize, grid, selectedCell, showNotes);
-  }, [grid, selectedCell, canvasSize, showNotes]);
+    drawGrid(ctx, canvasSize, grid, selectedCell, showNotes, hideNumbers, highlightNumber, hintContext);
+  }, [grid, selectedCell, canvasSize, showNotes, hideNumbers, highlightNumber, hintContext]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (canvasSize === 0) return;
@@ -102,62 +118,76 @@ function drawGrid(
   size: number,
   grid: SudokuGrid,
   selectedCell: { row: number; col: number } | null,
-  showNotes: boolean
+  showNotes: boolean,
+  hideNumbers: boolean,
+  highlightNumber: number | null,
+  hintContext: { row: number; col: number; mode: "row" | "col" | "box"; value: number } | null
 ) {
+  const getCssColor = (varName: string, fallback: string) => {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    if (!raw) return fallback;
+    if (raw.startsWith("hsl")) return raw;
+    return `hsl(${raw})`;
+  };
+
   const cellSize = size / 9;
 
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
-  const hsl = ctx.fillStyle;
-  ctx.fillStyle = hsl.startsWith('hsl') ? hsl : '#ffffff';
+  ctx.fillStyle = getCssColor('--card', '#ffffff');
   ctx.fillRect(0, 0, size, size);
 
   if (selectedCell) {
-    ctx.fillStyle = getComputedStyle(document.documentElement)
-      .getPropertyValue('--carv-purple')
-      .trim()
-      .replace(/[\d.]+%/g, (match) => {
-        const val = parseFloat(match);
-        return `${val * 0.15}%`;
-      }) || 'rgba(168, 85, 247, 0.15)';
+    ctx.fillStyle = "rgba(168, 85, 247, 0.12)";
     ctx.fillRect(
       selectedCell.col * cellSize,
       selectedCell.row * cellSize,
       cellSize,
       cellSize
     );
-
-    for (let i = 0; i < 9; i++) {
-      ctx.fillRect(i * cellSize, selectedCell.row * cellSize, cellSize, cellSize);
-      ctx.fillRect(selectedCell.col * cellSize, i * cellSize, cellSize, cellSize);
-    }
-
-    const boxRow = Math.floor(selectedCell.row / 3) * 3;
-    const boxCol = Math.floor(selectedCell.col / 3) * 3;
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        ctx.fillRect(
-          (boxCol + j) * cellSize,
-          (boxRow + i) * cellSize,
-          cellSize,
-          cellSize
-        );
-      }
-    }
   }
 
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
       const cell = grid[row][col];
-      
-      if (cell.isError) {
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
-        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+      const cellX = col * cellSize;
+      const cellY = row * cellSize;
+
+      // Hint context highlighting (row/column/box + target cell)
+      if (hintContext) {
+        const inHintRow = hintContext.mode === "row" && row === hintContext.row;
+        const inHintCol = hintContext.mode === "col" && col === hintContext.col;
+        const inHintBox =
+          hintContext.mode === "box" &&
+          Math.floor(row / 3) === Math.floor(hintContext.row / 3) &&
+          Math.floor(col / 3) === Math.floor(hintContext.col / 3);
+
+        const isTargetCell = row === hintContext.row && col === hintContext.col;
+
+        if (inHintRow || inHintCol || inHintBox) {
+          ctx.fillStyle = "rgba(59, 130, 246, 0.18)"; // blue-ish
+          ctx.fillRect(cellX, cellY, cellSize, cellSize);
+        }
+
+        if (isTargetCell) {
+          ctx.fillStyle = "rgba(34, 197, 94, 0.35)"; // green stronger
+          ctx.fillRect(cellX, cellY, cellSize, cellSize);
+        }
       }
 
-      if (cell.value > 0) {
+      // Highlight all cells with selected number
+      if (highlightNumber != null && cell.value === highlightNumber) {
+        ctx.fillStyle = "rgba(168, 85, 247, 0.25)"; // purple
+        ctx.fillRect(cellX, cellY, cellSize, cellSize);
+      }
+      
+      if (cell.isError && !hideNumbers) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+        ctx.fillRect(cellX, cellY, cellSize, cellSize);
+      }
+
+      if (cell.value > 0 && !hideNumbers) {
         ctx.fillStyle = cell.isGiven
-          ? getComputedStyle(document.documentElement).getPropertyValue('--foreground').trim()
-          : getComputedStyle(document.documentElement).getPropertyValue('--carv-purple').trim();
+          ? getCssColor('--foreground', '#0f172a')
+          : getCssColor('--carv-purple', '#a855f7');
         ctx.font = `${cell.isGiven ? '600' : '500'} ${cellSize * 0.5}px 'JetBrains Mono', monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -166,8 +196,8 @@ function drawGrid(
           col * cellSize + cellSize / 2,
           row * cellSize + cellSize / 2
         );
-      } else if (showNotes && cell.notes.length > 0) {
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim();
+      } else if (showNotes && cell.notes.length > 0 && !hideNumbers) {
+        ctx.fillStyle = getCssColor('--muted-foreground', '#6b7280');
         ctx.font = `400 ${cellSize * 0.18}px 'JetBrains Mono', monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -183,7 +213,7 @@ function drawGrid(
     }
   }
 
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#e5e7eb';
+  ctx.strokeStyle = getCssColor('--border', '#e5e7eb');
   ctx.lineWidth = 1;
   for (let i = 0; i <= 9; i++) {
     ctx.beginPath();
@@ -197,7 +227,7 @@ function drawGrid(
     ctx.stroke();
   }
 
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--foreground').trim() || '#1f2937';
+  ctx.strokeStyle = getCssColor('--foreground', '#1f2937');
   ctx.lineWidth = 3;
   for (let i = 0; i <= 9; i += 3) {
     ctx.beginPath();
@@ -212,7 +242,7 @@ function drawGrid(
   }
 
   if (selectedCell) {
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--carv-purple').trim() || '#a855f7';
+    ctx.strokeStyle = getCssColor('--carv-purple', '#a855f7');
     ctx.lineWidth = 3;
     ctx.strokeRect(
       selectedCell.col * cellSize + 1.5,
